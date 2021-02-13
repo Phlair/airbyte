@@ -39,7 +39,7 @@ from .api import (
     SkillsAPI,
     SurveysAPI,
     TicketsAPI,
-    TimeEntriesAPI, FreshdeskUnauthorized, FreshdeskNotFound,
+    TimeEntriesAPI,
 )
 
 
@@ -86,11 +86,8 @@ class Client(BaseClient):
 
         try:
             self.settings()
-        except (FreshdeskUnauthorized, FreshdeskNotFound):
-            alive = False
-            error_msg = f"Invalid credentials"
         except FreshdeskError as error:
             alive = False
-            error_msg = repr(error)
+            error_msg = str(error)
 
         return alive, error_msg

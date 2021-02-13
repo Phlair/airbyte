@@ -22,12 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import sys
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import Any, Callable, Iterator, Mapping, MutableMapping, Sequence
 
-import backoff as backoff
 import pendulum
 import requests
 from base_python.entrypoint import logger  # FIXME (Eugene K): use standard logger
@@ -65,26 +63,7 @@ class FreshdeskServerError(FreshdeskError):
     """50X errors"""
 
 
-def retry_pattern(backoff_type, exception, **wait_gen_kwargs):
-    """Retry helper, log each attempt"""
-
-    def log_retry_attempt(details):
-        _, exc, _ = sys.exc_info()
-        logger.info(str(exc))
-        logger.info(f"Caught retryable error after {details['tries']} tries. Waiting {details['wait']} more seconds then retrying...")
-
-    return backoff.on_exception(
-        backoff_type,
-        exception,
-        jitter=None,
-        on_backoff=log_retry_attempt,
-        **wait_gen_kwargs,
-    )
-
-
 class API:
-    backoff_policy = retry_pattern(backoff.expo, FreshdeskRateLimited, max_tries=5, factor=5)
-
     def __init__(self, domain: str, api_key: str, verify: bool = True, proxies: MutableMapping[str, str] = None):
         """Basic HTTP interface to read from endpoints"""
         self._api_prefix = f"https://{domain.rstrip('/')}/api/v2/"
@@ -106,18 +85,18 @@ class API:
 
         error_message = "Freshdesk Request Failed"
         if "errors" in j:
-            error_message = f"{j.get('description')}: {j['errors']}"
+            error_message = "{}: {}".format(j.get("description"), j.get("errors"))
         elif "message" in j:
-            error_message = f"{j.get('code')}: {j['message']}"
+            error_message = j["message"]
 
         if req.status_code == 400:
-            raise FreshdeskBadRequest(error_message or "Wrong input, check your data")
+            raise FreshdeskBadRequest(error_message)
         elif req.status_code == 401:
-            raise FreshdeskUnauthorized(error_message or "Invalid credentials")
+            raise FreshdeskUnauthorized(error_message)
         elif req.status_code == 403:
-            raise FreshdeskAccessDenied(error_message or "You don't have enough permissions")
+            raise FreshdeskAccessDenied(error_message)
         elif req.status_code == 404:
-            raise FreshdeskNotFound(error_message or "Resource not found")
+            raise FreshdeskNotFound(error_message)
         elif req.status_code == 429:
             raise FreshdeskRateLimited(
                 "429 Rate Limit Exceeded: API rate-limit has been reached until {} seconds. See "
@@ -134,7 +113,6 @@ class API:
 
         return j
 
-    @backoff_policy
     def get(self, url: str, params: Mapping = None):
         """Wrapper around request.get() to use the API prefix. Returns a JSON response."""
         params = params or {}
