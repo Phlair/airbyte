@@ -88,7 +88,9 @@ class BaseSource(Source):
 
         logger.info(f"Finished syncing {self.name}")
 
-    def _read_stream(self, logger: AirbyteLogger, client: BaseClient, configured_stream: ConfiguredAirbyteStream, state: MutableMapping[str, Any]):
+    def _read_stream(
+        self, logger: AirbyteLogger, client: BaseClient, configured_stream: ConfiguredAirbyteStream, state: MutableMapping[str, Any]
+    ):
         stream_name = configured_stream.stream.name
 
         if client.stream_has_state(stream_name) and state.get(stream_name):
@@ -104,5 +106,4 @@ class BaseSource(Source):
         if client.stream_has_state(stream_name):
             state[stream_name] = client.get_stream_state(stream_name)
             # output state object only together with other stream states
-            yield AirbyteMessage(type=MessageType.STATE,
-                                 state=AirbyteStateMessage(data=state))
+            yield AirbyteMessage(type=MessageType.STATE, state=AirbyteStateMessage(data=state))
