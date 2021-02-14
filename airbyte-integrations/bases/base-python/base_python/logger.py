@@ -23,6 +23,7 @@ SOFTWARE.
 """
 
 import traceback
+
 from airbyte_protocol import AirbyteLogMessage, AirbyteMessage
 
 

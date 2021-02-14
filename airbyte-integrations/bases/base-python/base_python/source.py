@@ -23,7 +23,7 @@ SOFTWARE.
 """
 
 from datetime import datetime
-from typing import Dict, Generator, Mapping, Type, MutableMapping, Any
+from typing import Any, Dict, Generator, Mapping, MutableMapping, Type
 
 from airbyte_protocol import (
     AirbyteCatalog,
